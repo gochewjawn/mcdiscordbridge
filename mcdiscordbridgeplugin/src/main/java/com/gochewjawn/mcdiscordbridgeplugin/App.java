@@ -1,0 +1,49 @@
+package com.gochewjawn.mcdiscordbridgeplugin;
+
+import java.util.Properties;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+
+public class App extends JavaPlugin {
+    private KafkaProducer<String, String> kafkaProducer;
+    private KafkaConsumer<String, String> kafkaConsumer;
+    private BukkitRunnable kafkaConsumerTask;
+
+    @Override
+    public void onEnable() {
+        saveDefaultConfig();
+        kafkaProducer = createKafkaProducer();
+        kafkaConsumer = createKafkaConsumer();
+        kafkaConsumerTask = new KafkaMessageReceivedEventEmitter(kafkaConsumer);
+        kafkaConsumerTask.runTaskAsynchronously(this);
+        getServer().getPluginManager().registerEvents(new KafkaMessageReceivedListener(this), this);
+        getServer().getPluginManager().registerEvents(new MinecraftMessageExporter(kafkaProducer, getConfig()), this);
+    }
+
+    @Override
+    public void onDisable() {
+        kafkaConsumerTask.cancel();
+    }
+
+    private KafkaProducer<String, String> createKafkaProducer() {
+        Properties props = new Properties();
+        props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getConfig().getString("kafka-bootstrap-servers"));
+        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        return new KafkaProducer<>(props);
+    }
+
+    private KafkaConsumer<String, String> createKafkaConsumer() {
+        Properties props = new Properties();
+        props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, getConfig().getString("kafka-bootstrap-servers"));
+        props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        return new KafkaConsumer<>(props);
+    }
+}
