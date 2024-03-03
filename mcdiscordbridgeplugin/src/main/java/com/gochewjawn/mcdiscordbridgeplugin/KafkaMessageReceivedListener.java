@@ -28,7 +28,7 @@ public class KafkaMessageReceivedListener implements Listener {
             return;
         }
 
-        String msg = String.format("[DISCORD] <{0}> {1}", msgModel.getAuthor(), msgModel.getContent());
+        String msg = String.format("[DISCORD] <%s> %s", msgModel.getAuthor(), msgModel.getContent());
         new BroadcastMessageTask(plugin, msg).runTask(plugin);
     }
 }
